@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</title>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background-color: #f4f6f8; margin: 0; padding: 15px; color: #333; }
+    .container { max-width: 1350px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h1 { text-align: center; color: #1e5631; font-size: 22px; margin-top: 5px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; }
+    
+    /* BỘ LỌC & NÚT BẤM */
+    .filter-box { background-color: #edf5ee; padding: 15px; border-radius: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; border: 1px solid #d4e5d7; }
+    .filter-group { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; }
+    .filter-group label { font-weight: 700; color: #1e5631; font-size: 13px; text-transform: uppercase; white-space: nowrap; }
+    .filter-group select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; outline: none; background: #fff; font-size: 14px; min-width: 160px; }
+    
+    .button-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; background: #c5d6c7; color: #4a634e; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn.active { background: #2e7d32; color: #fff; box-shadow: 0 2px 4px rgba(46,125,50,0.3); }
+    .btn.active:hover { background: #1b5e20; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-refresh { background-color: #0288d1; color: white; }
+    .btn-refresh:hover { background-color: #01579b; }
+
+    /* BẢNG DỮ LIỆU & SCROLL */
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #1e5631; border-radius: 4px; width: 100%; }
+    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 12.5px; background: #fff; min-width: 900px; }
+    th, td { border: 1px solid #c5d6c7; padding: 7px 5px; word-break: break-word; }
+    thead th { background-color: #1e5631; color: #ffffff; font-weight: 600; vertical-align: middle; }
+    thead tr:nth-child(2) th { background-color: #2e7d32; }
+    tbody tr:nth-child(even) { background-color: #f9fbf9; }
+    tbody tr:hover { background-color: #eaf3eb; }
+    .total-row td { background-color: #e2efe4; font-weight: 700; color: #1e5631; font-size: 13px; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; padding-left: 6px; }
+
+    .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.75); justify-content: center; align-items: center; z-index: 1000; font-weight: bold; font-size: 16px; color: #1e5631; }
+
+    .update-toast { display: none; position: fixed; bottom: 20px; right: 20px; background-color: #2e7d32; color: #fff; padding: 10px 18px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-size: 13px; font-weight: 600; z-index: 1000; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .access-container { display: none; text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #2e7d32; }
+    .btn-access { background-color: #1565c0; color: white; padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.2s; }
+    .btn-access:hover { background-color: #0d47a1; }
+
+    /* CẢI TIẾN RIÊNG CHO DI ĐỘNG: LOẠI BỎ KHOẢNG TRẮNG */
+    @media (max-width: 768px) {
+      body { padding: 6px; }
+      .container { padding: 10px; border-radius: 6px; }
+      h1 { font-size: 16px; margin-top: 2px; margin-bottom: 10px; }
+
+      .filter-box { 
+        flex-direction: column; 
+        align-items: stretch; 
+        padding: 10px; 
+        gap: 8px; 
+        margin-bottom: 12px;
+      }
+
+      .filter-group { 
+        flex-direction: row; 
+        align-items: center; 
+        justify-content: space-between;
+        gap: 8px; 
+        width: 100%; 
+        flex: none;
+      }
+      
+      .filter-group label {
+        font-size: 12px;
+        min-width: 65px;
+      }
+
+      .filter-group select { 
+        flex: 1;
+        font-size: 13px; 
+        padding: 6px 8px; 
+        height: 36px;
+      }
+      
+      .button-group { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 6px; 
+        width: 100%; 
+        margin-top: 4px;
+      }
+      
+      .btn {
+        padding: 7px 10px;
+        font-size: 12px;
+      }
+
+      .btn-refresh { 
+        grid-column: span 2; 
+        width: 100%; 
+      }
+
+      table { font-size: 11px; min-width: 780px; }
+      th, td { padding: 4px 2px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">Đang tải dữ liệu...</div>
+<div class="update-toast" id="updateToast">✓ Đã cập nhật xong dữ liệu mới nhất!</div>
+
+<div class="container">
+  <h1>BẢNG THỐNG KÊ ĐĂNG KÝ NƯỚC</h1>
+
+  <div class="filter-box">
+    <div class="filter-group">
+      <label for="selectDonVi">ĐƠN VỊ:</label>
+      <select id="selectDonVi" onchange="filterData()">
+        <option value="">-- Tất cả đơn vị --</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="selectThang">THÁNG:</label>
+      <select id="selectThang" onchange="filterData()">
+        <option value="">-- Tất cả tháng --</option>
+      </select>
+    </div>
+
+    <div class="button-group">
+      <button class="btn btn-refresh" onclick="forceReloadData()" title="Tải lại dữ liệu mới nhất">🔄 Cập nhật</button>
+      <button id="btnBienBanDonVi" class="btn" onclick="exportBienBanDonVi()" disabled>Biên bản Đơn vị</button>
+      <button id="btnBienBanTongThe" class="btn" onclick="exportBienBanTongThe()" disabled>Biên bản Tổng thể</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th rowspan="2" style="width: 35px;">STT</th>
+          <th rowspan="2" style="width: 110px;">Tên đơn vị</th>
+          <th rowspan="2" style="width: 70px;">Tháng</th>
+          <th colspan="4">Số lượng đặt (Bình/Chai)</th>
+          <th colspan="4">Thành tiền từng loại (VNĐ)</th>
+          <th rowspan="2" style="width: 100px;">Tổng tiền</th>
+          <th rowspan="2" style="width: 110px;">Tiến độ giao hàng</th>
+        </tr>
+        <tr>
+          <th>Loại 1 (18.5L)</th>
+          <th>Loại 2 (19L)</th>
+          <th>Loại 3 (0.35L)</th>
+          <th>Loại 4 (0.5L)</th>
+          <th>Tiền Loại 1</th>
+          <th>Tiền Loại 2</th>
+          <th>Tiền Loại 3</th>
+          <th>Tiền Loại 4</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot id="tableFooter"></tfoot>
+    </table>
+  </div>
+
+  <div id="accessContainer" class="access-container">
+    <button class="btn-access" onclick="openGoogleSheet()">🔗 Truy cập Google Sheet dữ liệu gốc</button>
+  </div>
+</div>
+
+<script>
+  const SPREADSHEET_ID = '1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w';
+  const URL_THONG_TIN = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Thong_tin_chung`;
+  const URL_SO_LUONG = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=So_luong_dat`;
+  const GOOGLE_SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/1G2SbJcyAy1GYwe16cwaMmphRMaA609ow5l53aHwVw_w/edit?resourcekey=&gid=1568833682#gid=1568833682`;
+
+  const CACHE_KEY = 'WATER_REGISTER_CACHE_DATA_V1';
+
+  let prices = [74600, 81300, 72500, 90500];
+  let slHopDong = [0, 0, 0, 0];
+  
+  let productNames = [
+    "Nước uống đóng bình/chai Loại 1 (18.5L)",
+    "Nước uống đóng bình/chai Loại 2 (19L)",
+    "Nước uống đóng chai Loại 3 (0.35L)",
+    "Nước uống đóng chai Loại 4 (0.5L)"
+  ];
+  let productUnits = ["Bình", "Bình", "Thùng", "Thùng"];
+
+  let rawData = [];
+  let filteredData = [];
+
+  const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType, WidthType, BorderStyle } = docx;
+
+  window.onload = function() {
+    initDataWithCache();
+    setupF2KeyShortcut();
+  };
+
+  function initDataWithCache() {
+    const cachedStr = localStorage.getItem(CACHE_KEY);
+    let hasCache = false;
+
+    if (cachedStr) {
+      try {
+        const cachedData = JSON.parse(cachedStr);
+        rawData = cachedData.rawData || [];
+        prices = cachedData.prices || prices;
+        slHopDong = cachedData.slHopDong || slHopDong;
+
+        if (rawData.length > 0) {
+          hasCache = true;
+          populateFilters();
+          filterData();
+        }
+      } catch(e) {
+        console.log("Lỗi đọc cache:", e);
+      }
+    }
+
+    if (!hasCache) {
+      showLoading(true);
+    }
+
+    loadSheetDataInBackground(!hasCache);
+  }
+
+  function forceReloadData() {
+    showLoading(true);
+    loadSheetDataInBackground(true);
+  }
+
+  async function loadSheetDataInBackground(showLoadingOverlay = false) {
+    try {
+      const resPrices = await fetch(URL_THONG_TIN);
+      const textPrices = await resPrices.text();
+      parsePricesJson(textPrices);
+
+      const resOrders = await fetch(URL_SO_LUONG);
+      const textOrders = await resOrders.text();
+      parseOrdersJson(textOrders);
+
+      const dataToCache = {
+        rawData: rawData,
+        prices: prices,
+        slHopDong: slHopDong,
+        updatedAt: new Date().getTime()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(dataToCache));
+
+      const curDV = document.getElementById('selectDonVi').value;
+      const curTH = document.getElementById('selectThang').value;
+
+      populateFilters();
+
+      document.getElementById('selectDonVi').value = curDV;
+      document.getElementById('selectThang').value = curTH;
+
+      filterData();
+      showUpdateToast();
+
+    } catch (err) {
+      console.log("Lỗi tải dữ liệu trực tuyến:", err);
+      if (rawData.length === 0) {
+        loadMockData();
+      }
+    } finally {
+      if (showLoadingOverlay) {
+        showLoading(false);
+      }
+    }
+  }
+
+  function showUpdateToast() {
+    const toast = document.getElementById('updateToast');
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 3000);
+  }
+
+  function setupF2KeyShortcut() {
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        const accessBox = document.getElementById('accessContainer');
+        accessBox.style.display = 'block';
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    });
+  }
+
+  function openGoogleSheet() {
+    window.open(GOOGLE_SHEET_EDIT_URL, '_blank');
+  }
+
+  function parsePricesJson(text) {
+    try {
+      const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+      const jsonText = jsonMatch ? jsonMatch[1] : text.substring(47, text.length - 2);
+      const json = JSON.parse(jsonText);
+      const rows = json.table.rows;
+
+      if (rows && rows.length > 0) {
+        for (let r = 0; r < rows.length; r++) {
+          if (rows[r] && rows[r].c && rows[r].c[1] && rows[r].c[1].v) {
+            let ma = String(rows[r].c[1].v).trim();
+            let idx = ['A1', 'A2', 'A3', 'A4'].indexOf(ma);
+            
+            if (idx !== -1) {
+              if (rows[r].c[5] && rows[r].c[5].v) {
+                let price = parseFloat(rows[r].c[5].v);
+                if (price < 1000) price *= 1000;
+                prices[idx] = price;
+              }
+              if (rows[r].c[4] && rows[r].c[4].v) {
+                 let val = parseFloat(rows[r].c[4].v);
+                 if (val < 10000 && val % 1 !== 0) val = val * 1000; 
+                 slHopDong[idx] = Math.round(val);
+              }
+            }
+          }
+        }
+      }
+    } catch(e) {
+      console.log("Lỗi đọc sheet Thông tin chung:", e);
+    }
+  }
+
+  function parseOrdersJson(text) {
+    try {
+      const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
+      const jsonText = jsonMatch ? jsonMatch[1] : text.substring(47, text.length - 2);
+      const json = JSON.parse(jsonText);
+      const rows = json.table.rows;
+      rawData = [];
+
+      rows.forEach((r, idx) => {
+        if (!r.c) return;
+        
+        const donVi = r.c[1] ? String(r.c[1].v || '') : '';
+        const thang = r.c[2] ? String(r.c[2].v || '') : '';
+        
+        const q1 = r.c[3] ? (parseInt(r.c[3].v) || 0) : 0;
+        const q2 = r.c[4] ? (parseInt(r.c[4].v) || 0) : 0;
+        const q3 = r.c[5] ? (parseInt(r.c[5].v) || 0) : 0;
+        const q4 = r.c[6] ? (parseInt(r.c[6].v) || 0) : 0;
+        
+        const b2 = r.c[7] ? String(r.c[7].v || '') : '';
+        const b3 = r.c[8] ? String(r.c[8].v || '') : '';
+        const b4 = r.c[9] ? String(r.c[9].v || '') : '';
+        const tienDo = r.c[9] ? String(r.c[9].v || '') : '';
+
+        if (donVi && thang) {
+          rawData.push({
+            id: idx + 1, donVi: donVi.trim(), thang: thang.trim(),
+            q: [q1, q2, q3, q4], b2: b2.trim(), b3: b3.trim(), b4: b4.trim(),
+            tienDo: tienDo.trim()
+          });
+        }
+      });
+    } catch(e) {
+      console.log("Lỗi đọc sheet Số lượng đặt:", e);
+    }
+  }
+
+  function loadMockData() {
+    slHopDong = [14375, 4617, 990, 1767];
+    rawData = [
+      { id: 1, donVi: "Thuế 1", thang: "8/2026", q: [12, 20, 30, 0], b2: "Số 10 Nguyễn Trãi, Thanh Xuân, Hà Nội", b3: "Nguyễn Văn A", b4: "Trưởng Thuế cơ sở", tienDo: "Đã giao" },
+      { id: 2, donVi: "Thuế 2", thang: "8/2026", q: [200, 3, 15, 20], b2: "Số 25 Lý Thường Kiệt, Hoàn Kiếm, Hà Nội", b3: "Trần Thị B", b4: "Phó Trưởng Thuế cơ sở", tienDo: "Đã giao" },
+      { id: 3, donVi: "Thuế 3", thang: "9/2026", q: [30, 25, 36, 12], b2: "Số 88 Lăng Bác, Ba Đình, Hà Nội", b3: "Lê Văn C", b4: "Trưởng Thuế cơ sở", tienDo: "Đang giao" }
+    ];
+    populateFilters();
+    filterData();
+  }
+
+  function populateFilters() {
+    const selectDV = document.getElementById('selectDonVi');
+    const selectTH = document.getElementById('selectThang');
+
+    const donVis = [...new Set(rawData.map(item => item.donVi))];
+    const thangs = [...new Set(rawData.map(item => item.thang))];
+
+    selectDV.innerHTML = '<option value="">-- Tất cả đơn vị --</option>';
+    donVis.forEach(dv => selectDV.innerHTML += `<option value="${dv}">${dv}</option>`);
+
+    selectTH.innerHTML = '<option value="">-- Tất cả tháng --</option>';
+    thangs.forEach(th => selectTH.innerHTML += `<option value="${th}">${th}</option>`);
+  }
+
+  function filterData() {
+    const selectedDV = document.getElementById('selectDonVi').value;
+    const selectedTH = document.getElementById('selectThang').value;
+
+    filteredData = rawData.filter(item => {
+      const matchDV = !selectedDV || item.donVi === selectedDV;
+      const matchTH = !selectedTH || item.thang === selectedTH;
+      return matchDV && matchTH;
+    });
+
+    renderTable();
+
+    const btnDV = document.getElementById('btnBienBanDonVi');
+    const btnTT = document.getElementById('btnBienBanTongThe');
+
+    if (selectedDV && selectedTH) {
+      btnDV.disabled = false;
+      btnDV.classList.add('active');
+    } else {
+      btnDV.disabled = true;
+      btnDV.classList.remove('active');
+    }
+
+    if (selectedTH) {
+      btnTT.disabled = false;
+      btnTT.classList.add('active');
+    } else {
+      btnTT.disabled = true;
+      btnTT.classList.remove('active');
+    }
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    let sumQ = [0, 0, 0, 0];
+    let sumMoney = [0, 0, 0, 0];
+    let totalGrand = 0;
+
+    filteredData.forEach((item, index) => {
+      const money = item.q.map((qty, i) => Math.round(qty * prices[i]));
+      const totalRow = money.reduce((a, b) => a + b, 0);
+
+      item.q.forEach((qty, i) => sumQ[i] += qty);
+      money.forEach((m, i) => sumMoney[i] += m);
+      totalGrand += totalRow;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${index + 1}</td>
+        <td class="text-left">${item.donVi}</td>
+        <td>${item.thang}</td>
+        <td>${item.q[0] || ''}</td>
+        <td>${item.q[1] || ''}</td>
+        <td>${item.q[2] || ''}</td>
+        <td>${item.q[3] || ''}</td>
+        <td class="text-right">${formatNum(money[0])}</td>
+        <td class="text-right">${formatNum(money[1])}</td>
+        <td class="text-right">${formatNum(money[2])}</td>
+        <td class="text-right">${formatNum(money[3])}</td>
+        <td class="text-right" style="font-weight:bold;">${formatNum(totalRow)}</td>
+        <td>${item.tienDo || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const tfoot = document.getElementById('tableFooter');
+    tfoot.innerHTML = `
+      <tr class="total-row">
+        <td colspan="3" class="text-center">TỔNG CỘNG ĐĂNG KÝ</td>
+        <td>${sumQ[0]}</td>
+        <td>${sumQ[1]}</td>
+        <td>${sumQ[2]}</td>
+        <td>${sumQ[3]}</td>
+        <td class="text-right">${formatNum(sumMoney[0])}</td>
+        <td class="text-right">${formatNum(sumMoney[1])}</td>
+        <td class="text-right">${formatNum(sumMoney[2])}</td>
+        <td class="text-right">${formatNum(sumMoney[3])}</td>
+        <td class="text-right" style="color:#1b5e20;">${formatNum(totalGrand)}</td>
+        <td></td>
+      </tr>
+      <tr class="total-row" style="background-color: #fbe9e7; color: #d84315;">
+        <td colspan="3" class="text-center">SỐ LIỆU THEO HỢP ĐỒNG</td>
+        <td>${formatNum(slHopDong[0])}</td>
+        <td>${formatNum(slHopDong[1])}</td>
+        <td>${formatNum(slHopDong[2])}</td>
+        <td>${formatNum(slHopDong[3])}</td>
+        <td colspan="6" class="text-center">-</td>
+      </tr>
+    `;
+  }
+
+  function formatNum(num) {
+    if (!num && num !== 0) return '0';
+    return num.toLocaleString('vi-VN');
+  }
+
+  function showLoading(show) {
+    document.getElementById('loading').style.display = show ? 'flex' : 'none';
+  }
+
+  async function exportBienBanDonVi() {
+    const selectedDV = document.getElementById('selectDonVi').value;
+    const selectedTH = document.getElementById('selectThang').value;
+
+    if (!selectedDV || !selectedTH) {
+      alert("Vui lòng chọn đầy đủ Đơn vị và Tháng!");
+      return;
+    }
+
+    const item = rawData.find(d => d.donVi === selectedDV && d.thang === selectedTH);
+    if (!item) {
+      alert("Không tìm thấy dữ liệu!");
+      return;
+    }
+
+    await generateDocxForUnit(item);
+  }
+
+  async function exportBienBanTongThe() {
+    const selectedTH = document.getElementById('selectThang').value;
+    if (!selectedTH) {
+      alert("Vui lòng chọn Tháng để xuất Biên bản Tổng thể!");
+      return;
+    }
+
+    const items = rawData.filter(d => d.thang === selectedTH);
+    if (items.length === 0) {
+      alert("Không có dữ liệu trong tháng này!");
+      return;
+    }
+
+    showLoading(true);
+    try {
+      for (let item of items) {
+        await generateDocxForUnit(item);
+      }
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function getAccumulatedBefore(donVi, currentThang) {
+    const parseThang = (str) => {
+      const parts = str.split('/');
+      if(parts.length === 1) {
+        const partsDash = str.split('-');
+        if(partsDash.length > 1) return { m: parseInt(partsDash[0]), y: parseInt(partsDash[1]) };
+      }
+      return { m: parseInt(parts[0]), y: parseInt(parts[1]) };
+    };
+
+    const cur = parseThang(currentThang);
+    let accumQ = [0, 0, 0, 0];
+
+    rawData.forEach(d => {
+      if (d.donVi === donVi) {
+        const t = parseThang(d.thang);
+        if (t.y < cur.y || (t.y === cur.y && t.m < cur.m)) {
+          d.q.forEach((qty, i) => accumQ[i] += qty);
+        }
+      }
+    });
+
+    const accumMoney = accumQ.map((qty, i) => Math.round(qty * prices[i]));
+    return { accumQ, accumMoney };
+  }
+
+  async function generateDocxForUnit(item) {
+    const donVi = item.donVi;
+    const thangStr = item.thang;
+    const b2_diaChi = item.b2 || "Địa chỉ Thuế cơ sở";
+    const b3_nguoiDaiDien = item.b3 || "Trưởng Thuế cơ sở";
+    const b4_chucVu = item.b4 || "Trưởng Thuế cơ sở";
+
+    const { accumQ, accumMoney } = getAccumulatedBefore(donVi, thangStr);
+
+    const curQ = item.q;
+    const curMoney = curQ.map((qty, i) => Math.round(qty * prices[i]));
+    const totalCurMoney = curMoney.reduce((a, b) => a + b, 0);
+
+    const moneyInWords = numberToVietnameseWords(totalCurMoney);
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: { margin: { top: 1134, bottom: 1134, left: 1440, right: 1134 } }
+        },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: "------------------------", size: 20, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: `BIÊN BẢN BÀN GIAO NGHIỆM THU HÀNG HÓA TỪNG THÁNG`, bold: true, size: 28, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: `(Tháng ${thangStr})`, bold: true, italic: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: "- Căn cứ Hợp đồng kinh tế số 05032025/HĐ-INKH ngày 05/03/2025 về việc cung cấp nước uống đóng bình/chai cho các đơn vị thuộc Thuế cơ sở;", italic: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: `BÊN A (Đơn vị nhận): ${donVi.toUpperCase()}`, bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Địa chỉ: ${b2_diaChi}`, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: `Đại diện: ${b3_nguoiDaiDien}`, size: 24, font: "Times New Roman" }),
+              new TextRun({ text: `    Chức vụ: ${b4_chucVu}`, size: 24, font: "Times New Roman" })
+            ]
+          }),
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: "BÊN B (Nhà thầu): CÔNG TY CỔ PHẦN IN HÀ NỘI", bold: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Địa chỉ: Đường Phúc Diễn, Phường Phúc Diễn, Quận Bắc Từ Liêm, TP. Hà Nội", size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Đại diện: Bà Nguyễn Thị Oanh", size: 24, font: "Times New Roman" }),
+              new TextRun({ text: "    Chức vụ: Tổng Giám đốc", size: 24, font: "Times New Roman" })
+            ]
+          }),
+          new Paragraph({ text: "", spacing: { after: 200 } }),
+
+          new Paragraph({
+            children: [new TextRun({ text: "Hai bên cùng thống nhất nghiệm thu khối lượng nước uống giao nhận cụ thể như sau:", size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          createDocxTable(accumQ, accumMoney, curQ, curMoney, totalCurMoney),
+
+          new Paragraph({ text: "", spacing: { after: 150 } }),
+
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Số tiền bằng chữ (đợt này): ", bold: true, size: 24, font: "Times New Roman" }),
+              new TextRun({ text: `${moneyInWords}.`, italic: true, size: 24, font: "Times New Roman" })
+            ]
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: "Biên bản được lập thành 04 bản có giá trị pháp lý như nhau, Bên A giữ 01 bản, Bên B giữ 01 bản, Chủ đầu tư giữ 02 bản.", italic: true, size: 24, font: "Times New Roman" })]
+          }),
+          new Paragraph({ text: "", spacing: { after: 300 } }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
+              insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE }
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ĐẠI DIỆN BÊN A", bold: true, size: 24, font: "Times New Roman" })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "KT. TRƯỞNG THUẾ CƠ SỞ", bold: true, size: 22, font: "Times New Roman" })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: b4_chucVu.toUpperCase(), bold: true, size: 22, font: "Times New Roman" })] }),
+                      new Paragraph({ text: "", spacing: { after: 1200 } }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: b3_nguoiDaiDien, bold: true, size: 24, font: "Times New Roman" })] })
+                    ]
+                  }),
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    children: [
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "ĐẠI DIỆN BÊN B", bold: true, size: 24, font: "Times New Roman" })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "TỔNG GIÁM ĐỐC", bold: true, size: 22, font: "Times New Roman" })] }),
+                      new Paragraph({ text: "", spacing: { after: 1200 } }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Nguyễn Thị Oanh", bold: true, size: 24, font: "Times New Roman" })] })
+                    ]
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const cleanDVName = donVi.replace(/\s+/g, '_');
+    const cleanThang = thangStr.replace('/', '_').replace('-', '_');
+    saveAs(blob, `Bien_ban_nghiem_thu_${cleanDVName}_Thang_${cleanThang}.docx`);
+  }
+
+  function createDocxTable(accumQ, accumMoney, curQ, curMoney, totalCurMoney) {
+    const tableHeader = new TableRow({
+      tableHeader: true,
+      children: [
+        createCell("STT", { width: 5, bold: true, align: AlignmentType.CENTER }),
+        createCell("Danh mục hàng hóa", { width: 30, bold: true, align: AlignmentType.CENTER }),
+        createCell("ĐVT", { width: 8, bold: true, align: AlignmentType.CENTER }),
+        createCell("Đơn giá (VNĐ)", { width: 12, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số lượng lũy kế đến tháng trước", { width: 12, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số tiền lũy kế đến tháng trước (VNĐ)", { width: 13, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số lượng đợt này", { width: 10, bold: true, align: AlignmentType.CENTER }),
+        createCell("Số tiền đợt này (VNĐ)", { width: 10, bold: true, align: AlignmentType.CENTER })
+      ]
+    });
+
+    const rows = [tableHeader];
+
+    for (let i = 0; i < 4; i++) {
+      rows.push(new TableRow({
+        children: [
+          createCell((i + 1).toString(), { align: AlignmentType.CENTER }),
+          createCell(productNames[i], { align: AlignmentType.LEFT }),
+          createCell(productUnits[i], { align: AlignmentType.CENTER }),
+          createCell(formatNum(prices[i]), { align: AlignmentType.RIGHT }),
+          createCell(accumQ[i] ? accumQ[i].toString() : "0", { align: AlignmentType.CENTER }),
+          createCell(formatNum(accumMoney[i]), { align: AlignmentType.RIGHT }),
+          createCell(curQ[i] ? curQ[i].toString() : "0", { align: AlignmentType.CENTER }),
+          createCell(formatNum(curMoney[i]), { align: AlignmentType.RIGHT })
+        ]
+      }));
+    }
+
+    const totalAccumMoney = accumMoney.reduce((a, b) => a + b, 0);
+    const totalCurQ = curQ.reduce((a, b) => a + b, 0);
+
+    rows.push(new TableRow({
+      children: [
+        createCell("TỔNG CỘNG", { colSpan: 4, bold: true, align: AlignmentType.CENTER }),
+        createCell("", { bold: true, align: AlignmentType.CENTER }),
+        createCell(formatNum(totalAccumMoney), { bold: true, align: AlignmentType.RIGHT }),
+        createCell(totalCurQ.toString(), { bold: true, align: AlignmentType.CENTER }),
+        createCell(formatNum(totalCurMoney), { bold: true, align: AlignmentType.RIGHT })
+      ]
+    }));
+
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: rows
+    });
+  }
+
+  function createCell(text, opts = {}) {
+    return new TableCell({
+      columnSpan: opts.colSpan || 1,
+      children: [new Paragraph({
+        alignment: opts.align || AlignmentType.LEFT,
+        children: [new TextRun({ text: text, bold: !!opts.bold, size: 20, font: "Times New Roman" })]
+      })],
+      verticalAlign: docx.VerticalAlign.CENTER
+    });
+  }
+
+  function numberToVietnameseWords(number) {
+    if (number === 0) return "Không đồng";
+    const defaultNumbers = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+    const units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+
+    function readGroup(group) {
+      let read = "";
+      let hundreds = Math.floor(group / 100);
+      let tens = Math.floor((group % 100) / 10);
+      let ones = group % 10;
+
+      if (hundreds > 0 || tens > 0 || ones > 0) read += defaultNumbers[hundreds] + " trăm ";
+      if (tens > 1) {
+        read += defaultNumbers[tens] + " mươi ";
+        if (ones === 1) read += "mốt ";
+        else if (ones === 5) read += "lăm ";
+        else if (ones > 0) read += defaultNumbers[ones] + " ";
+      } else if (tens === 1) {
+        read += "mười ";
+        if (ones === 1) read += "một ";
+        else if (ones === 5) read += "lăm ";
+        else if (ones > 0) read += defaultNumbers[ones] + " ";
+      } else if (hundreds > 0 && ones > 0) {
+        read += "lẻ " + defaultNumbers[ones] + " ";
+      } else if (ones > 0) {
+        read += defaultNumbers[ones] + " ";
+      }
+      return read;
+    }
+
+    let strNum = Math.round(number).toString();
+    let groups = [];
+    while (strNum.length > 0) {
+      let len = Math.min(3, strNum.length);
+      groups.push(parseInt(strNum.substring(strNum.length - len)));
+      strNum = strNum.substring(0, strNum.length - len);
+    }
+
+    let result = "";
+    for (let i = groups.length - 1; i >= 0; i--) {
+      if (groups[i] > 0) result += readGroup(groups[i]) + units[i] + " ";
+    }
+    result = result.trim();
+    if (result.length > 0) {
+      result = result.charAt(0).toUpperCase() + result.slice(1) + " đồng chẵn";
+    }
+    return result;
+  }
+</script>
+
+</body>
+</html>
